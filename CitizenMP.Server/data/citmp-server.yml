@@ -12,6 +12,8 @@ RconPassword: lovely
 
 Hostname: fresh FiveM server
 
+Game: GTA5
+
 PlatformServer: iv-platform.prod.citizen.re
 
 ScriptDebug: true
