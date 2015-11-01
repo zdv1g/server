@@ -75,13 +75,16 @@ AddEventHandler('onClientResourceStart', function(res)
         end
     end
 
-    if maps[res] then
-        Citizen.Trace("ocms mapmanager\n")
+    -- defer this to the next game tick to work around a lack of dependencies
+    Citizen.CreateThread(function()
+        Citizen.Wait(15)
 
-        TriggerEvent('onClientMapStart', res)
-    elseif gametypes[res] then
-        TriggerEvent('onClientGameTypeStart', res)
-    end
+        if maps[res] then
+            TriggerEvent('onClientMapStart', res)
+        elseif gametypes[res] then
+            TriggerEvent('onClientGameTypeStart', res)
+        end
+    end)
 end)
 
 AddEventHandler('onClientResourceStop', function(res)
