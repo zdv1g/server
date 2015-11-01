@@ -4,29 +4,13 @@ PreParseResources:
     - mapmanager
 
 AutoStartResources:
-    - gameInit # this resource (or equivalent) is pretty much required for the game to start; it'll crash on loading otherwise
-    - baseevents
-    - sessionmanager
+    #- fivem-awesome1501
+    - fivem
     - spawnmanager
-    - mapmanager
-    - chat
-    - rconlog
-    - betaguns
-    - keks
-    #- play-midpa
-    - obituary
-    - obituary-deaths
-    #- race-test
-    #- ocw
-    #- play-midpa
-    #- lovelier
-    #- play-viiv
-    #- viiv-tdd
-    #- irc
 
 RconPassword: lovely
 
-Hostname: why did this get committed
+Hostname: fresh FiveM server
 
 PlatformServer: iv-platform.prod.citizen.re
 
@@ -35,11 +19,14 @@ ScriptDebug: true
 DebugLog: false
 
 # enjoy viiv
-Imports:
-    - ConfigURL: http://cache.lilycove.hacks.re/exports.json
+#Imports:
+#    - ConfigURL: http://cache.lilycove.hacks.re/exports.json
 
 # the following is an example for resource download offloading
 #Downloads:
 #    all:
 #        BaseURL: http://cache.lilycove.hacks.re/
 #        UploadURL: ftp://citizen:city@localhost/
+
+DisableAuth: true
+

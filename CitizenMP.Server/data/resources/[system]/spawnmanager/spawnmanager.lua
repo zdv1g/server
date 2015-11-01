@@ -12,39 +12,45 @@ AddEventHandler('getMapDirectives', function(add)
         return function(opts)
             local x, y, z, heading
 
-            -- is this a map or an array?
-            if opts.x then
-                x = opts.x
-                y = opts.y
-                z = opts.z
-            else
-                x = opts[1]
-                y = opts[2]
-                z = opts[3]
+            local s, e = pcall(function()
+                -- is this a map or an array?
+                if opts.x then
+                    x = opts.x
+                    y = opts.y
+                    z = opts.z
+                else
+                    x = opts[1]
+                    y = opts[2]
+                    z = opts[3]
+                end
+
+                x = x + 0.0001
+                y = y + 0.0001
+                z = z + 0.0001
+
+                -- get a heading and force it to a float, or just default to null
+                heading = opts.heading and (opts.heading + 0.01) or 0
+
+                -- add the spawnpoint
+                addSpawnPoint({
+                    x = x, y = y, z = z,
+                    heading = heading,
+                    model = model
+                })
+
+                -- recalculate the model for storage
+                if not tonumber(model) then
+                    model = GetHashKey(model, _r)
+                end
+
+                -- store the spawn data in the state so we can erase it later on
+                state.add('xyz', { x, y, z })
+                state.add('model', model)
+            end)
+
+            if not s then
+                Citizen.Trace(e .. "\n")
             end
-
-            x = x + 0.0001
-            y = y + 0.0001
-            z = z + 0.0001
-
-            -- get a heading and force it to a float, or just default to null
-            heading = opts.heading and (opts.heading + 0.01) or 0
-
-            -- add the spawnpoint
-            addSpawnPoint({
-                x = x, y = y, z = z,
-                heading = heading,
-                model = model
-            })
-
-            -- recalculate the model for storage
-            if not tonumber(model) then
-                model = GetHashKey(model, _r)
-            end
-
-            -- store the spawn data in the state so we can erase it later on
-            state.add('xyz', { x, y, z })
-            state.add('model', model)
         end
         -- delete callback follows on the next line
     end, function(state, arg)
@@ -93,7 +99,7 @@ function addSpawnPoint(spawn)
     local model = spawn.model
 
     if not tonumber(spawn.model) then
-        model = GetHashKey(spawn.model, _r)
+        model = GetHashKey(spawn.model)
     end
 
     -- is the model actually a model?
@@ -102,9 +108,10 @@ function addSpawnPoint(spawn)
     end
 
     -- is is even a ped?
-    if not IsThisModelAPed(model) then
+    -- not in V?
+    --[[if not IsThisModelAPed(model) then
         error("this model ain't a ped!")
-    end
+    end]]
 
     -- overwrite the model in case we hashed it
     spawn.model = model
@@ -120,56 +127,71 @@ end
 
 -- function as existing in original R* scripts
 local function freezePlayer(id, freeze)
-    local player = ConvertIntToPlayerindex(id)
-    SetPlayerControlForNetwork(player, not freeze, false)
+    local player = id
+    SetPlayerControl(player, not freeze, false)
 
-    local ped = GetPlayerChar(player, _i)
+    local ped = GetPlayerPed(player)
 
     if not freeze then
-        if not IsCharVisible(ped) then
-            SetCharVisible(ped, true)
+        if not IsEntityVisible(ped) then
+            SetEntityVisible(ped, true)
         end
 
-        if not IsCharInAnyCar(ped) then
-            SetCharCollision(ped, true)
+        if not IsPedInAnyVehicle(ped) then
+            SetEntityCollision(ped, true)
         end
 
-        FreezeCharPosition(ped, false)
-        SetCharNeverTargetted(ped, false)
+        FreezeEntityPosition(ped, false)
+        --SetCharNeverTargetted(ped, false)
         SetPlayerInvincible(player, false)
     else
-        if IsCharVisible(ped) then
-            SetCharVisible(ped, false)
+        if IsEntityVisible(ped) then
+            SetEntityVisible(ped, false)
         end
 
-        SetCharCollision(ped, false)
-        FreezeCharPosition(ped, true)
-        SetCharNeverTargetted(ped, true)
+        SetEntityCollision(ped, false)
+        FreezeEntityPosition(ped, true)
+        --SetCharNeverTargetted(ped, true)
         SetPlayerInvincible(player, true)
-        RemovePtfxFromPed(ped)
+        --RemovePtfxFromPed(ped)
 
-        if not IsCharFatallyInjured(ped) then
-            ClearCharTasksImmediately(ped)
+        if not IsPedFatallyInjured(ped) then
+            ClearPedTasksImmediately(ped)
         end
     end
 end
 
 function loadScene(x, y, z)
-    StartLoadScene(x, y, z)
+    NewLoadSceneStart(x, y, z, 0.0, 0.0, 0.0, 20.0, 0)
 
-    while not UpdateLoadScene() do
-        networkTimer = GetNetworkTimer(_i)
+    while IsNewLoadSceneActive() do
+        networkTimer = GetNetworkTimer()
 
-        exports.sessionmanager:serviceHostStuff()
+        NetworkUpdateLoadScene()
     end
 end
 
+-- to prevent trying to spawn multiple times
+local spawnLock = false
+
 -- spawns the current player at a certain spawn point index (or a random one, for that matter)
 function spawnPlayer(spawnIdx, cb)
-    CreateThread(function()
+    if spawnLock then
+        return
+    end
+
+    spawnLock = true
+
+    Citizen.CreateThread(function()
+        DoScreenFadeOut(500)
+
+        while IsScreenFadingOut() do
+            Citizen.Wait(0)
+        end
+
         -- if the spawn isn't set, select a random one
         if not spawnIdx then
-            spawnIdx = GenerateRandomIntInRange(1, #spawnPoints + 1, _i)
+            spawnIdx = GetRandomIntInRange(1, #spawnPoints + 1)
         end
 
         -- get the spawn from the array
@@ -183,13 +205,15 @@ function spawnPlayer(spawnIdx, cb)
 
         -- validate the index
         if not spawn then
-            echo("tried to spawn at an invalid spawn index\n")
+            Citizen.Trace("tried to spawn at an invalid spawn index\n")
+
+            spawnLock = false
 
             return
         end
 
         -- freeze the local player
-        freezePlayer(GetPlayerId(), true)
+        freezePlayer(PlayerId(), true)
 
         -- if the spawn has a model set
         if spawn.model then
@@ -203,67 +227,92 @@ function spawnPlayer(spawnIdx, cb)
             end
 
             -- change the player model
-            ChangePlayerModel(GetPlayerId(), spawn.model)
+            SetPlayerModel(PlayerId(), spawn.model)
 
             -- release the player model
-            MarkModelAsNoLongerNeeded(spawn.model)
+            SetModelAsNoLongerNeeded(spawn.model)
         end
 
         -- preload collisions for the spawnpoint
-        RequestCollisionAtPosn(spawn.x, spawn.y, spawn.z)
+        RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
 
         -- spawn the player
-        ResurrectNetworkPlayer(GetPlayerId(), spawn.x, spawn.y, spawn.z, spawn.heading)
+        --ResurrectNetworkPlayer(GetPlayerId(), spawn.x, spawn.y, spawn.z, spawn.heading)
+        NetworkResurrectLocalPlayer(spawn.x, spawn.y, spawn.z, spawn.heading, true, true, true)
 
         -- gamelogic-style cleanup stuff
-        local ped = GetPlayerPed()
+        local ped = GetPlayerPed(-1)
 
-        ClearCharTasksImmediately(ped)
-        SetCharHealth(ped, 300) -- TODO: allow configuration of this?
-        RemoveAllCharWeapons(ped)
-        ClearWantedLevel(GetPlayerId())
+        -- V requires setting coords as well
+        SetEntityCoordsNoOffset(ped, spawn.x, spawn.y, spawn.z, false, false, false, true)
+
+        ClearPedTasksImmediately(ped)
+        --SetEntityHealth(ped, 300) -- TODO: allow configuration of this?
+        RemoveAllPedWeapons(ped) -- TODO: make configurable (V behavior?)
+        ClearPlayerWantedLevel(PlayerId())
 
         -- why is this even a flag?
-        SetCharWillFlyThroughWindscreen(ped, false)
+        --SetCharWillFlyThroughWindscreen(ped, false)
 
         -- set primary camera heading
         --SetGameCamHeading(spawn.heading)
-        CamRestoreJumpcut(GetGameCam())
+        --CamRestoreJumpcut(GetGameCam())
 
         -- load the scene; streaming expects us to do it
-        ForceLoadingScreen(true)
+        --ForceLoadingScreen(true)
         --loadScene(spawn.x, spawn.y, spawn.z)
-        ForceLoadingScreen(false)
+        --ForceLoadingScreen(false)
+
+        ShutdownLoadingScreen()
 
         DoScreenFadeIn(500)
 
+        while IsScreenFadingIn() do
+            Citizen.Wait(0)
+        end
+
         -- and unfreeze the player
-        freezePlayer(GetPlayerId(), false)
+        freezePlayer(PlayerId(), false)
 
         TriggerEvent('playerSpawned', spawn)
 
         if cb then
             cb(spawn)
         end
+
+        spawnLock = false
     end)
 end
 
 -- automatic spawning monitor thread, too
 local respawnForced
+local diedAt
 
-CreateThread(function()
+Citizen.CreateThread(function()
     -- main loop thing
     while true do
-        Wait(50)
+        Citizen.Wait(50)
 
-        -- check if we want to autospawn
-        if autoSpawnEnabled then
-            if IsNetworkPlayerActive(GetPlayerId()) then
-                if (HowLongHasNetworkPlayerBeenDeadFor(GetPlayerId(), _r) > 2000) or respawnForced then
-                    spawnPlayer()
+        local playerPed = GetPlayerPed(-1)
 
-                    respawnForced = false
+        if playerPed and playerPed ~= -1 then
+            -- check if we want to autospawn
+            if autoSpawnEnabled then
+                if NetworkIsPlayerActive(PlayerId()) then
+                    if (diedAt and (GetTimeDifference(GetGameTimer(), diedAt) > 2000)) or respawnForced then
+                        spawnPlayer()
+
+                        respawnForced = false
+                    end
                 end
+            end
+
+            if IsEntityDead(playerPed) then
+                if not diedAt then
+                    diedAt = GetGameTimer()
+                end
+            else
+                diedAt = nil
             end
         end
     end

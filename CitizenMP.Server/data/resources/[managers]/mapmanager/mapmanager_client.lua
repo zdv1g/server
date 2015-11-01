@@ -32,6 +32,43 @@ function addMap(file, owningResource)
 end
 
 AddEventHandler('onClientResourceStart', function(res)
+    -- parse metadata for this resource
+
+    -- map files
+    local num = GetNumResourceMetadata(res, 'map')
+
+    if num then
+        for i = 0, num-1 do
+            local file = GetResourceMetadata(res, 'map', i)
+
+            if file then
+                addMap(file, res)
+            end
+        end
+    end
+
+    -- resource type data
+    local type = GetResourceMetadata(res, 'resource_type', 0)
+
+    if type then
+        Citizen.Trace("type " .. res .. " " .. type .. "\n")
+
+        local extraData = GetResourceMetadata(res, 'resource_type_extra', 0)
+
+        if extraData then
+            extraData = json.decode(extraData)
+        else
+            extraData = {}
+        end
+
+        if type == 'map' then
+            maps[res] = extraData
+        elseif type == 'gametype' then
+            gametypes[res] = extraData
+        end
+    end
+
+    -- handle starting
     if mapFiles[res] then
         for _, file in ipairs(mapFiles[res]) do
             parseMap(file, res)
@@ -39,6 +76,8 @@ AddEventHandler('onClientResourceStart', function(res)
     end
 
     if maps[res] then
+        Citizen.Trace("ocms mapmanager\n")
+
         TriggerEvent('onClientMapStart', res)
     elseif gametypes[res] then
         TriggerEvent('onClientGameTypeStart', res)
@@ -65,15 +104,6 @@ end)
 undoCallbacks = {}
 
 function parseMap(file, owningResource)
-    local path = owningResource .. ':/' .. file
-
-    local mapFunction = LoadScriptFile(path)
-
-    if not mapFunction then
-        echo("Couldn't load map " .. file .. "\n")
-        return
-    end
-
     if not undoCallbacks[owningResource] then
         undoCallbacks[owningResource] = {}
     end
@@ -116,13 +146,19 @@ function parseMap(file, owningResource)
     }
 
     setmetatable(env, mt)
-    setfenv(mapFunction, env)
+    
+    local mapFunction = load(LoadResourceFile(owningResource, file), file, 't', env)
+
+    if not mapFunction then
+        Citizen.Trace("Couldn't load map " .. file .. "\n")
+        return
+    end
 
     mapFunction()
 end
 
 AddEventHandler('getMapDirectives', function(add)
-    add('car_generator', function(state, name)
+    add('vehicle_generator', function(state, name)
         return function(opts)
             local x, y, z, heading
             local color1, color2
@@ -137,22 +173,25 @@ AddEventHandler('getMapDirectives', function(add)
                 z = opts[3]
             end
 
-            heading = opts.heading and (opts.heading + 0.01) or 0
+            heading = opts.heading or 1.0
             color1 = opts.color1 or -1
             color2 = opts.color2 or -1
 
-            local hash = GetHashKey(name, _r)
+            local hash = GetHashKey(name)
 
-            local carGen = CreateCarGenerator(x, y, z, heading, 2.01, 3.01, hash, color1, color2, -1, -1, 1, 0, 0, _i)
-            SwitchCarGenerator(carGen, 101)
+            Citizen.Trace('vehicle hash ' .. tostring(hash) .. "\n")
 
-            echo("added car gen " .. tostring(carGen) .. "\n")
+            local carGen = CreateScriptVehicleGenerator(x, y, z, heading, 5.0, 3.0, hash, color1, color2, -1, -1, true, false, false, true, true, -1)
+            SetScriptVehicleGenerator(carGen, true)
+            SetAllVehicleGeneratorsActive(true)
+
+            Citizen.Trace("added car gen " .. tostring(carGen) .. "\n")
 
             state.add('cargen', carGen)
         end
     end, function(state, arg)
-        echo("deleting car gen " .. tostring(state.cargen) .. "\n")
+        Citizen.Trace("deleting car gen " .. tostring(state.cargen) .. "\n")
 
-        DeleteCarGenerator(state.cargen)
+        DeleteScriptVehicleGenerator(state.cargen)
     end)
 end)
