@@ -238,7 +238,7 @@ function spawnPlayer(spawnIdx, cb)
 
         -- spawn the player
         --ResurrectNetworkPlayer(GetPlayerId(), spawn.x, spawn.y, spawn.z, spawn.heading)
-        NetworkResurrectLocalPlayer(spawn.x, spawn.y, spawn.z, spawn.heading, true, true, true)
+        NetworkResurrectLocalPlayer(spawn.x, spawn.y, spawn.z, spawn.heading, true, true, false)
 
         -- gamelogic-style cleanup stuff
         local ped = GetPlayerPed(-1)
