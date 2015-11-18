@@ -89,16 +89,25 @@ namespace CitizenMP.Server.Resources.Tasks
                 var resourceFlags = size;
                 var resourceVersion = 0;
 
-                if (reader.ReadUInt32() == 0x05435352) // RSC\x5
-                {
-                    resourceVersion = reader.ReadInt32();
-                    resourceFlags = reader.ReadUInt32();
-                }
-
                 var obj = new JObject();
                 obj["Hash"] = hash;
                 obj["BaseName"] = basename;
                 obj["Size"] = size;
+
+                var magic = reader.ReadUInt32();
+
+                if (magic == 0x05435352) // RSC\x5
+                {
+                    resourceVersion = reader.ReadInt32();
+                    resourceFlags = reader.ReadUInt32();
+                }
+                else if (magic == 0x37435352) // RSC7
+                {
+                    resourceVersion = reader.ReadInt32();
+                    obj["RscPagesVirtual"] = reader.ReadUInt32();
+                    obj["RscPagesPhysical"] = reader.ReadUInt32();
+                }
+
                 obj["RscFlags"] = resourceFlags;
                 obj["RscVersion"] = resourceVersion;
 
@@ -132,6 +141,14 @@ namespace CitizenMP.Server.Resources.Tasks
                 newEntry.RscFlags = obj.Value<uint>("RscFlags");
                 newEntry.RscVersion = obj.Value<uint>("RscVersion");
                 newEntry.Size = obj.Value<uint>("Size");
+
+                JToken dummy;
+                if (obj.TryGetValue("RscPagesVirtual", out dummy))
+                {
+                    newEntry.UsesNewFlags = true;
+                    newEntry.RscPagesVirtual = obj.Value<uint>("RscPagesVirtual");
+                    newEntry.RscPagesPhysical = obj.Value<uint>("RscPagesPhysical");
+                }
 
                 // viiv hacks
                 if (newEntry.BaseName.Contains(".wpl"))

@@ -27,6 +27,12 @@ namespace CitizenMP.Server.Resources
                     obj["rscVersion"] = entry.Value.RscVersion;
                     obj["size"] = entry.Value.Size;
 
+                    if (entry.Value.UsesNewFlags)
+                    {
+                        obj["rscPagesVirtual"] = entry.Value.RscPagesVirtual;
+                        obj["rscPagesPhysical"] = entry.Value.RscPagesPhysical;
+                    }
+
                     streamFiles[entry.Value.BaseName] = obj;
                 }
 

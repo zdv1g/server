@@ -337,6 +337,9 @@ namespace CitizenMP.Server.Resources
             public uint RscFlags { get; set; }
             public uint RscVersion { get; set; }
             public uint Size { get; set; }
+            public uint RscPagesPhysical { get; set; }
+            public uint RscPagesVirtual { get; set; }
+            public bool UsesNewFlags { get; set; }
         }
 
         public IDictionary<string, StreamCacheEntry> StreamEntries { get; set; }
