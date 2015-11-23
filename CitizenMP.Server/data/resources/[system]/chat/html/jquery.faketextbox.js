@@ -88,6 +88,11 @@
                 $tb.bind('keypress', f);
             };
 
+            this.getTextBox = function()
+            {
+                return $tb;
+            };
+
             syncTextbox();
 
             if ($me.hasClass('initFocus')) {

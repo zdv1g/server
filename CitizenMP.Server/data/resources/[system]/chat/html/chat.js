@@ -46,115 +46,112 @@ function colorize(string)
 $(function()
 {
     var chatHideTimeout;
+    var inputShown = false;
 
     function startHideChat()
     {
-        return;
-
         if (chatHideTimeout)
         {
             clearTimeout(chatHideTimeout);
         }
 
+        if (inputShown)
+        {
+            return;
+        }
+
         chatHideTimeout = setTimeout(function()
         {
+            if (inputShown)
+            {
+                return;
+            }
+
             $('#chat').fadeOut(200);
         }, 10000);
     }
+
+    handleResult = function(elem, wasEnter)
+    {
+        inputShown = false;
+
+        $('#chatInputHas').hide();
+
+        startHideChat();
+
+        var obj = {};
+
+        if (wasEnter)
+        {
+            obj = { message: $(elem).val() };
+        }
+
+        $(elem).val('');
+
+        $.post('http://chat/chatResult', JSON.stringify(obj), function(data)
+        {
+            console.log(data);
+        });
+    };
 
     $('#chatInput').fakeTextbox(); // //
 
     $('#chatInput')[0].onPress(function(e)
     {
-        if (e.which == 13 || e.keyCode == 27)
+        if (e.which == 13)
         {
-            $('#chatInputHas').hide();
-
-            startHideChat();
-
-            var obj = {};
-
-            if (e.which == 13)
-            {
-                obj = { message: $(this).val() };
-            }
-
-            $(this).val('');
-
-            $.post('http://chat/chatResult', JSON.stringify(obj), function(data)
-            {
-                console.log(data);
-            });
+            handleResult(this, true);
         }
     });
 
-    var getLock = 0;
-
-    function refetchData()
+    $(document).keyup(function(e)
     {
-        getLock = 0;
-
-        $.get('http://chat/getNew', function(data)
+        if (e.keyCode == 27)
         {
-            if (getLock > 1)
-            {
-                setTimeout(refetchData, 50);
+            handleResult($('#chatInput')[0].getTextBox(), false);
+        }
+    });
 
-                return;
-            }
-
-            getLock++;
-
-            data.forEach(function(item)
-            {
-                if (item.meta && item.meta == 'openChatBox')
-                {
-                    $('#chat').show();
-
-                    $('#chatInputHas').show();
-                    $('#chatInput')[0].doFocus();
-
-                    return;
-                }
-
-                // TODO: use some templating stuff for this
-                var colorR = parseInt(item.color[0]);
-                var colorG = parseInt(item.color[1]);
-                var colorB = parseInt(item.color[2]);
-
-                var name = item.name.replace('<', '&lt;');
-                var message = item.message.replace('<', '&lt;');
-
-                message = colorize(message);
-
-                var buf = $('#chatBuffer');
-
-                var nameStr = '';
-
-                if (name != '')
-                {
-                    nameStr = '<strong style="color: rgb(' + colorR + ', ' + colorG + ', ' + colorB + ')">' + name + ': </strong>';
-                }
-
-                buf.find('ul').append('<li>' + nameStr + message + '</li>');
-                buf.scrollTop(buf[0].scrollHeight - buf.height());
-
-                $('#chat').show(0);
-
-                startHideChat();
-            });
-        });
-    }
-
-    // on poll, request this
-    //registerPollFunction(function()
     window.addEventListener('message', function(event)
     {
-        if (event.data.type != 'poll')
+        var item = event.data;
+
+        if (item.meta && item.meta == 'openChatBox')
         {
+            inputShown = true;
+
+            $('#chat').show();
+
+            $('#chatInputHas').show();
+            $('#chatInput')[0].doFocus();
+
             return;
         }
 
-        refetchData();
+        // TODO: use some templating stuff for this
+        var colorR = parseInt(item.color[0]);
+        var colorG = parseInt(item.color[1]);
+        var colorB = parseInt(item.color[2]);
+
+        var name = item.name.replace('<', '&lt;');
+        var message = item.message.replace('<', '&lt;');
+
+        message = colorize(message);
+
+        var buf = $('#chatBuffer');
+
+        var nameStr = '';
+
+        if (name != '')
+        {
+            nameStr = '<strong style="color: rgb(' + colorR + ', ' + colorG + ', ' + colorB + ')">' + name + ': </strong>';
+        }
+
+        buf.find('ul').append('<li>' + nameStr + message + '</li>');
+        buf.scrollTop(buf[0].scrollHeight - buf.height());
+
+        $('#chat').show(0);
+
+        startHideChat();
     }, false);
 });

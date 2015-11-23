@@ -1,7 +1,6 @@
 description 'chat management stuff'
 
--- temporary!
-SetResourceInfo('uiPage', 'html/chat.html')
+ui_page 'html/chat.html'
 
 client_script 'chat_client.lua'
 server_script 'chat_server.lua'
