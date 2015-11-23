@@ -150,10 +150,11 @@ function parseMap(file, owningResource)
 
     setmetatable(env, mt)
     
-    local mapFunction = load(LoadResourceFile(owningResource, file), file, 't', env)
+    local fileData = LoadResourceFile(owningResource, file)
+    local mapFunction, err = load(fileData, file, 't', env)
 
     if not mapFunction then
-        Citizen.Trace("Couldn't load map " .. file .. "\n")
+        Citizen.Trace("Couldn't load map " .. file .. ": " .. err .. " (type of fileData: " .. type(fileData) .. ")\n")
         return
     end
 
