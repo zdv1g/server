@@ -3,6 +3,7 @@ local spawnPoints = {}
 
 -- auto-spawn enabled flag
 local autoSpawnEnabled = false
+local autoSpawnCallback
 
 -- support for mapmanager maps
 AddEventHandler('getMapDirectives', function(add)
@@ -125,6 +126,12 @@ function setAutoSpawn(enabled)
     autoSpawnEnabled = enabled
 end
 
+-- sets a callback to execute instead of 'native' spawning when trying to auto-spawn
+function setAutoSpawnCallback(cb)
+    autoSpawnCallback = cb
+    autoSpawnEnabled = true
+end
+
 -- function as existing in original R* scripts
 local function freezePlayer(id, freeze)
     local player = id
@@ -238,14 +245,14 @@ function spawnPlayer(spawnIdx, cb)
 
         -- spawn the player
         --ResurrectNetworkPlayer(GetPlayerId(), spawn.x, spawn.y, spawn.z, spawn.heading)
-        NetworkResurrectLocalPlayer(spawn.x, spawn.y, spawn.z, spawn.heading, true, true, false)
-
-        -- gamelogic-style cleanup stuff
         local ped = GetPlayerPed(-1)
 
         -- V requires setting coords as well
         SetEntityCoordsNoOffset(ped, spawn.x, spawn.y, spawn.z, false, false, false, true)
 
+        NetworkResurrectLocalPlayer(spawn.x, spawn.y, spawn.z, spawn.heading, true, true, false)
+
+        -- gamelogic-style cleanup stuff
         ClearPedTasksImmediately(ped)
         --SetEntityHealth(ped, 300) -- TODO: allow configuration of this?
         RemoveAllPedWeapons(ped) -- TODO: make configurable (V behavior?)
@@ -300,7 +307,13 @@ Citizen.CreateThread(function()
             if autoSpawnEnabled then
                 if NetworkIsPlayerActive(PlayerId()) then
                     if (diedAt and (GetTimeDifference(GetGameTimer(), diedAt) > 2000)) or respawnForced then
-                        spawnPlayer()
+                        Citizen.Trace("forcin' respawn\n")
+
+                        if autoSpawnCallback then
+                            autoSpawnCallback()
+                        else
+                            spawnPlayer()
+                        end
 
                         respawnForced = false
                     end
@@ -319,6 +332,7 @@ Citizen.CreateThread(function()
 end)
 
 function forceRespawn()
+    spawnLock = false
     respawnForced = true
 end
 
