@@ -8,8 +8,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-using NPSharp.NP;
-
 namespace CitizenMP.Server.Game
 {
     class GameServer
@@ -35,9 +33,7 @@ namespace CitizenMP.Server.Game
         private Resources.ResourceManager m_resourceManager;
 
         private Configuration m_configuration;
-
-        private NPClient m_platformClient;
-
+        
         public Commands.CommandManager CommandManager
         {
             get;
@@ -49,14 +45,6 @@ namespace CitizenMP.Server.Game
             get
             {
                 return m_configuration;
-            }
-        }
-
-        public NPClient PlatformClient
-        {
-            get
-            {
-                return m_platformClient;
             }
         }
 
@@ -73,7 +61,7 @@ namespace CitizenMP.Server.Game
         public string GameType { get; set; }
         public string MapName { get; set; }
 
-        public GameServer(Configuration config, Resources.ResourceManager resManager, Commands.CommandManager commandManager, NPClient platformClient)
+        public GameServer(Configuration config, Resources.ResourceManager resManager, Commands.CommandManager commandManager)
         {
             m_configuration = config;
 
@@ -82,8 +70,6 @@ namespace CitizenMP.Server.Game
 
             m_resourceManager = resManager;
             m_resourceManager.SetGameServer(this);
-
-            m_platformClient = platformClient;
 
             var dnsEntry = Dns.GetHostEntry("refint.org");
             
@@ -922,56 +908,6 @@ namespace CitizenMP.Server.Game
             SendOutOfBand(m_serverList, "heartbeat DarkPlaces\n");
         }
 
-        private DateTime? m_platformConnectingTime;
-        private bool m_reconnecting;
-
-        private void CheckPlatformDisconnect()
-        {
-            // marker to signify disconnect
-            if (m_platformClient.LoginId == 0)
-            {
-                if (!m_reconnecting)
-                {
-                    if (m_platformConnectingTime == null || (DateTime.UtcNow - m_platformConnectingTime.Value).TotalSeconds > 5)
-                    {
-                        this.Log().Warn("Disconnected from Terminal - reconnecting...");
-
-                        m_reconnecting = true;
-
-                        Task.Run(() =>
-                        {
-                            if (m_platformClient.Connect())
-                            {
-                                this.Log().Warn("Authenticating to Terminal during reconnect.");
-
-                                m_platformClient.AuthenticateWithLicenseKey("").ContinueWith(success =>
-                                {
-                                    m_platformConnectingTime = null;
-                                    m_reconnecting = false;
-
-                                    this.Log().Warn("Terminal reauthentication complete!");
-                                });
-                            }
-                            else
-                            {
-                                this.Log().Warn("Reconnecting to Terminal failed.");
-
-                                // throw an exception for capture in the continuation
-                                throw new Exception("Failed to connect to Terminal");
-                            }
-                        }).ContinueWith(task =>
-                        {
-                            if (task.Exception != null)
-                            {
-                                m_platformConnectingTime = DateTime.UtcNow;
-                                m_reconnecting = false;
-                            }
-                        });
-                    }
-                }
-            }
-        }
-
         private void ProcessServerFrame()
         {
             // process client timeouts
@@ -1007,9 +943,7 @@ namespace CitizenMP.Server.Game
             }
 
             ResourceManager.Tick();
-
-            CheckPlatformDisconnect();
-
+            
             // and then just send reliable buffers
             foreach (var client in ClientInstances.Clients)
             {

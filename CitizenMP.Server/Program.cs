@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 using CitizenMP.Server.Logging;
-using NPSharp.NP;
 
 namespace CitizenMP.Server
 {
@@ -51,43 +48,13 @@ namespace CitizenMP.Server
                 return;
             }
 
-            var platformServer = config.PlatformServer ?? "iv-platform.prod.citizen.re";
-            var client = new NPClient(platformServer, (config.PlatformPort == 0) ? (ushort)3036 : (ushort)config.PlatformPort);
-
-            this.Log().Info("Connecting to Terminal platform server at {0}.", platformServer);
-
-            var connectResult = client.Connect();
-
-            if (!connectResult)
-            {
-                this.Log().Fatal("Could not connect to the configured platform server ({0}).", platformServer);
-                return;
-            }
-
-            this.Log().Info("Authenticating to Terminal with anonymous license key.");
-
-            // authenticate anonymously
-            var task = client.AuthenticateWithLicenseKey("");
-
-            if (!task.Wait(15000))
-            {
-                this.Log().Fatal("Could not authenticate anonymously to the configured platform server ({0}) - operation timed out.", platformServer);
-                return;
-            }
-
-            if (!task.Result)
-            {
-                this.Log().Fatal("Could not authenticate anonymously to the configured platform server ({0}).", platformServer);
-                return;
-            }
-
             this.Log().Info("Creating initial server instance.");
 
             var commandManager = new Commands.CommandManager();
             var resManager = new Resources.ResourceManager(config);
 
             // create the game server (as resource scanning needs it now)
-            var gameServer = new Game.GameServer(config, resManager, commandManager, client);
+            var gameServer = new Game.GameServer(config, resManager, commandManager);
 
             // preparse resources
             if (config.PreParseResources != null)

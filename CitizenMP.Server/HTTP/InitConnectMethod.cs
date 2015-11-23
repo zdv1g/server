@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -63,32 +64,103 @@ namespace CitizenMP.Server.HTTP
                 // authentication
                 if (!gameServer.Configuration.DisableAuth)
                 {
-                    string authTicket;
+                    try
+                    { string authTicket;
 
-                    if (!headers.TryGetByName("authTicket", out authTicket))
+                        if (!headers.TryGetByName("authTicket", out authTicket))
+                        {
+                            result["authID"] = (0x110000100000001).ToString();
+
+                            return result;
+                        }
+
+                        var validationAddress = ((IPEndPoint)context.RemoteEndPoint).Address;
+
+                        if (validationAddress.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6)
+                        {
+                            validationAddress = IPAddress.Parse("192.168.1.1"); // as these are whitelisted in NP code
+                        }
+
+                        // validate using the HTTP endpoint
+                        var platformPort = gameServer.Configuration.PlatformPort;
+
+                        if (platformPort == 0)
+                        {
+                            platformPort = 3035;
+                        }
+
+                        // create a request
+                        var httpClient = HttpWebRequest.CreateHttp(string.Format("http://{0}:{1}/ticket/validate", gameServer.Configuration.PlatformServer, platformPort));
+                        httpClient.Method = "POST";
+                        httpClient.ContentType = "application/json";
+
+                        // get the request stream
+                        var requestStream = await httpClient.GetRequestStreamAsync();
+
+                        // create the request object
+                        var requestObject = new JObject();
+                        requestObject["npid"] = "0x" + long.Parse(guid).ToString("X16");
+                        requestObject["clientIP"] = validationAddress.ToString();
+                        requestObject["ticket"] = authTicket;
+
+                        // write the encoded object
+                        var writer = new StreamWriter(requestStream);
+                        await writer.WriteAsync(requestObject.ToString(Newtonsoft.Json.Formatting.None));
+                        writer.Close();
+
+                        // get the response from the server
+                        var response = await httpClient.GetResponseAsync();
+                        using (var responseStream = response.GetResponseStream())
+                        {
+                            var reader = new StreamReader(responseStream);
+                            var responseObject = JObject.Parse(await reader.ReadToEndAsync());
+
+                            if (!responseObject["valid"].Value<bool>())
+                            {
+                                result["error"] = "Platform rejected authentication: " + responseObject["error"].Value<string>();
+
+                                return result;
+                            }
+
+                            JToken jsonValue;
+
+                            try
+                            {
+                                jsonValue = JToken.Parse(responseObject["identifiers"].Value<string>());
+                            }
+                            catch (FileLoadException)
+                            {
+                                result["error"] = "Failed to parse identifier string.";
+
+                                return result;
+                            }
+
+                            var identifiers = new List<string>();
+
+                            if (jsonValue.Type == JTokenType.Array)
+                            {
+                                var array = (JArray)jsonValue;
+
+                                foreach (var identifierToken in array.Children())
+                                {
+                                    if (identifierToken.Type == JTokenType.Array)
+                                    {
+                                        var identifierArray = (JArray)identifierToken;
+
+                                        identifiers.Add(string.Format("{0}:{1}", identifierArray[0], identifierArray[1]));
+                                    }
+                                }
+                            }
+
+                            clientIdentifiers = identifiers;
+                        }
+                    }
+                    catch (Exception e)
                     {
-                        result["authID"] = gameServer.PlatformClient.LoginId;
+                        result["error"] = "Error during authentication: " + e.Message;
 
                         return result;
                     }
-
-                    var validationAddress = ((IPEndPoint)context.RemoteEndPoint).Address;
-
-                    if (validationAddress.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6)
-                    {
-                        validationAddress = IPAddress.Parse("192.168.1.1"); // as these are whitelisted in NP code
-                    }
-
-                    var authResult = await gameServer.PlatformClient.ValidateTicket(validationAddress, ulong.Parse(guid), new NPSharp.RPC.Messages.Data.Ticket(Convert.FromBase64String(authTicket)));
-
-                    if (!authResult.IsValid)
-                    {
-                        result["error"] = "Invalid NPID sent.";
-
-                        return result;
-                    }
-
-                    clientIdentifiers = authResult.Identifiers;
                 }
                 else
                 {

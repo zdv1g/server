@@ -31,5 +31,5 @@ DebugLog: false
 #        BaseURL: http://cache.lilycove.hacks.re/
 #        UploadURL: ftp://citizen:city@localhost/
 
-DisableAuth: true
+DisableAuth: false
 
