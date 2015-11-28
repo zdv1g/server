@@ -168,6 +168,19 @@ namespace CitizenMP.Server.HTTP
                     clientIdentifiers = new[] { string.Format("ip:{0}", ((IPEndPoint)context.RemoteEndPoint).Address) };
                 }
 
+                // check if we're banned
+                foreach (var identifier in clientIdentifiers)
+                {
+                    string reason;
+
+                    if (gameServer.IsIdentifierBanned(identifier, out reason))
+                    {
+                        result["error"] = "You have been banned from this server. Stated reason: " + reason;
+
+                        return result;
+                    }
+                }
+
                 var client = new Client();
                 client.Token = TokenGenerator.GenerateToken();
                 client.Name = name;

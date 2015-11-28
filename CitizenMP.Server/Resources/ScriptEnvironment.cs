@@ -14,7 +14,7 @@ namespace CitizenMP.Server.Resources
     class ScriptEnvironment : IDisposable
     {
         private Resource m_resource;
-        private LuaGlobal m_luaEnvironment;
+        private LuaGlobalPortable m_luaEnvironment;
 
         private static Lua ms_luaState;
         private static ILuaDebug ms_luaDebug;
@@ -89,7 +89,7 @@ namespace CitizenMP.Server.Resources
             }
         }
 
-        public LuaGlobal LuaEnvironment
+        public LuaGlobalPortable LuaEnvironment
         {
             get
             {
@@ -555,7 +555,7 @@ namespace CitizenMP.Server.Resources
                         e = e.InnerException;
                     }
 
-                    eventHandlers.Clear();
+                    //eventHandlers.Clear();
 
                     ms_currentEnvironment = lastEnvironment;
                     LastEnvironment = oldLastEnvironment;

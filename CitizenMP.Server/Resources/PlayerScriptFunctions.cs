@@ -131,6 +131,36 @@ namespace CitizenMP.Server.Resources
             return ScriptEnvironment.CurrentEnvironment.Resource.Manager.GameServer.GetHostID();
         }
 
+        [LuaMember("DropPlayer")]
+        static void DropPlayer(int source, string reason)
+        {
+            var player = FindPlayer(source);
+
+            if (player != null)
+            {
+                ScriptEnvironment.CurrentEnvironment.Resource.Manager.GameServer.DropClient(player, reason);
+            }
+        }
+
+        // similar semantics to IW tempBanClient - bans are not persisted, and last less than an hour, mainly to deter from instant rejoining
+        // bans are applied on identifiers, as well
+        [LuaMember("TempBanPlayer")]
+        static void TempBanPlayer(int source, string reason)
+        {
+            var player = FindPlayer(source);
+
+            if (player != null)
+            {
+                var gameServer = ScriptEnvironment.CurrentEnvironment.Resource.Manager.GameServer;
+                gameServer.DropClient(player, reason);
+
+                foreach (var identifier in player.Identifiers)
+                {
+                    gameServer.BanIdentifier(identifier, reason);
+                }
+           }
+        }
+
         static Client FindPlayer(int source)
         {
             return ClientInstances.Clients.Where(a => a.Value.NetID == source).Select(a => a.Value).FirstOrDefault();

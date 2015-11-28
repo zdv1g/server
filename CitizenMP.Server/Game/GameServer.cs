@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace CitizenMP.Server.Game
 {
-    class GameServer
+    partial class GameServer
     {
         public const uint PROTOCOL_VERSION = 3;
 
@@ -512,6 +512,14 @@ namespace CitizenMP.Server.Game
 
         public void DropClient(Client client, string reason)
         {
+            // send a message stating the reason
+            byte[] bytes = BitConverter.GetBytes(-1).Concat(Encoding.UTF8.GetBytes(string.Format("error {0}", reason))).ToArray();
+            client.SendRaw(bytes);
+
+            // resend after 100msec 'to be sure'
+            Task.Delay(100).ContinueWith(task => client.SendRaw(bytes));
+
+            // handle dropping
             BeforeDropClient(client, reason);
 
             ClientInstances.RemoveClient(client);

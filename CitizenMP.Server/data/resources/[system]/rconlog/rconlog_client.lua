@@ -1,11 +1,25 @@
+RegisterNetEvent('rlUpdateNames')
+
 AddEventHandler('rlUpdateNames', function()
     local names = {}
 
     for i = 0, 31 do
-        if IsNetworkPlayerActive(i) then
-            names[GetPlayerNetID(i)] = { id = i, name = GetPlayerName(i, _s) }
+        if NetworkIsPlayerActive(i) then
+            names[GetPlayerServerId(i)] = { id = i, name = GetPlayerName(i) }
         end
     end
 
     TriggerServerEvent('rlUpdateNamesResult', names)
+end)
+
+Citizen.CreateThread(function()
+	while true do
+		Wait(0)
+
+		if NetworkIsSessionStarted() then
+			TriggerServerEvent('rlPlayerActivated')
+
+			return
+		end
+	end
 end)

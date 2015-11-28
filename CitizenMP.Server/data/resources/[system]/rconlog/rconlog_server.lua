@@ -1,11 +1,11 @@
 RconLog({ msgType = 'serverStart', hostname = 'lovely', maxplayers = 32 })
 
-RegisterServerEvent('playerActivated')
+RegisterServerEvent('rlPlayerActivated')
 
 local names = {}
 
-AddEventHandler('playerActivated', function()
-    RconLog({ msgType = 'playerActivated', netID = source, name = GetPlayerName(source), guid = GetPlayerGuid(source), ip = GetPlayerEP(source) })
+AddEventHandler('rlPlayerActivated', function()
+    RconLog({ msgType = 'playerActivated', netID = source, name = GetPlayerName(source), guid = GetPlayerIdentifiers(source)[1], ip = GetPlayerEP(source) })
 
     names[source] = { name = GetPlayerName(source), id = source }
 
@@ -52,14 +52,28 @@ end)
 AddEventHandler('rconCommand', function(commandName, args)
     if commandName == 'status' then
         for netid, data in pairs(names) do
-            local guid = GetPlayerGuid(netid)
+            local guid = GetPlayerIdentifiers(netid)
 
             if guid then
                 local ping = GetPlayerPing(netid)
 
-                RconPrint(netid .. ' ' .. guid .. ' ' .. data.name .. ' ' .. GetPlayerEP(netid) .. ' ' .. ping .. "\n")
+                RconPrint(netid .. ' ' .. guid[1] .. ' ' .. data.name .. ' ' .. GetPlayerEP(netid) .. ' ' .. ping .. "\n")
             end
         end
+
+        CancelEvent()
+    elseif commandName:lower() == 'clientkick' then
+        local playerId = table.remove(args, 1)
+        local msg = table.concat(args, ' ')
+
+        DropPlayer(playerId, msg)
+
+        CancelEvent()
+    elseif commandName:lower() == 'tempbanclient' then
+        local playerId = table.remove(args, 1)
+        local msg = table.concat(args, ' ')
+
+        TempBanPlayer(playerId, msg)
 
         CancelEvent()
     end
