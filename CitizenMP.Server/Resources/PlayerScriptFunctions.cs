@@ -16,7 +16,7 @@ namespace CitizenMP.Server.Resources
             var subClients = ClientInstances.Clients.Where(c => c.Value.NetChannel != null).Select(c => c.Value.NetID).ToArray();
 
             var table = new LuaTable();
-            var i = 0;
+            var i = 1;
 
             foreach (var client in subClients)
             {
