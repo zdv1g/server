@@ -46,7 +46,7 @@ AddEventHandler('playerDropped', function()
 end)
 
 AddEventHandler('chatMessage', function(netID, name, message)
-    RconLog({ msgType = 'chatMessage', netID = netID, name = name, message = message, guid = GetPlayerGuid(netID) })
+    RconLog({ msgType = 'chatMessage', netID = netID, name = name, message = message, guid = GetPlayerIdentifiers(netID)[1] })
 end)
 
 AddEventHandler('rconCommand', function(commandName, args)
@@ -54,7 +54,7 @@ AddEventHandler('rconCommand', function(commandName, args)
         for netid, data in pairs(names) do
             local guid = GetPlayerIdentifiers(netid)
 
-            if guid then
+            if guid and guid[1] and data then
                 local ping = GetPlayerPing(netid)
 
                 RconPrint(netid .. ' ' .. guid[1] .. ' ' .. data.name .. ' ' .. GetPlayerEP(netid) .. ' ' .. ping .. "\n")
