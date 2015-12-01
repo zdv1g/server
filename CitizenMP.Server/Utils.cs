@@ -6,6 +6,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
+using MsgPack.Serialization;
+
 namespace CitizenMP.Server
 {
     static class Utils
@@ -184,21 +186,62 @@ namespace CitizenMP.Server
             }
         }
 
+        static Utils()
+        {
+            SerializationContext.Default.ResolveSerializer += (sender, args) =>
+            {
+                if (args.TargetType.IsSubclassOf(typeof(Delegate)))
+                {
+                    // probably *really* slow, but this is the only way it seems to be possible with the strict generic type requirements
+                    var instance = Activator.CreateInstance(typeof(DelegateSerializer<>).MakeGenericType(args.TargetType));
+                    args.GetType().GetMethod("SetSerializer").MakeGenericMethod(args.TargetType).Invoke(args, new[] { instance });
+                }
+            };
+        }
+
         public static byte[] SerializeEvent(object[] args)
         {
             var stream = new MemoryStream();
-            var packer = MsgPack.Packer.Create(stream);
+            var packer = MsgPack.Packer.Create(stream, MsgPack.PackerCompatibilityOptions.PackBinaryAsRaw);
 
             packer.PackArrayHeader(args.Length);
 
             for (int i = 0; i < args.Length; i++)
             {
-                var mpo = MsgPack.Serialization.MessagePackSerializer.Create(args[i].GetType());
+                var mpo = MessagePackSerializer.Get(args[i].GetType());
                 mpo.PackTo(packer, args[i]);
             }
 
             // make it into a string for lua
             return stream.ToArray();
+        }
+    }
+
+    class DelegateSerializer<T> : MessagePackSerializer<T>
+    {
+        public DelegateSerializer()
+            : base(SerializationContext.Default)
+        {
+
+        }
+
+        protected override void PackToCore(MsgPack.Packer packer, T objectTree)
+        {
+            var index = Resources.InternalCallRefHandler.Get().AddCallback(objectTree as Delegate);
+
+            var resourceNameBytes = Encoding.UTF8.GetBytes("__internal");
+            var delegateData = new byte[8 + resourceNameBytes.Length];
+
+            Array.Copy(BitConverter.GetBytes(index).Reverse().ToArray(), 0, delegateData, 0, 4);
+            Array.Copy(BitConverter.GetBytes(0).Reverse().ToArray(), 0, delegateData, 4, 4);
+            Array.Copy(resourceNameBytes, 0, delegateData, 8, resourceNameBytes.Length);
+
+            packer.PackExtendedTypeValue(1, delegateData);
+        }
+
+        protected override T UnpackFromCore(MsgPack.Unpacker unpacker)
+        {
+            throw new NotImplementedException();
         }
     }
 }

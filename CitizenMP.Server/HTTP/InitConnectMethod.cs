@@ -196,6 +196,22 @@ namespace CitizenMP.Server.HTTP
 
                 ClientInstances.AddClient(client);
 
+                // check if resources have anything against this client
+                {
+                    string reason = "Resource prevented connection.";
+                    Action<string> setCallback = reasonString => reason = reasonString;
+
+                    if (!gameServer.ResourceManager.TriggerEvent("playerConnecting", client.NetID, client.Name, setCallback))
+                    {
+                        // remove the client again
+                        ClientInstances.RemoveClient(client);
+
+                        // and return with this error
+                        result["error"] = reason;
+                        return result;
+                    }
+                }
+
                 result["token"] = client.Token;
                 result["protocol"] = Game.GameServer.PROTOCOL_VERSION;
 

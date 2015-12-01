@@ -5,14 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Newtonsoft.Json.Linq;
-
-using YamlDotNet.RepresentationModel;
-using YamlDotNet.Serialization;
-
 namespace CitizenMP.Server.Resources
 {
-    public class Resource
+    public class Resource : ICallRefHandler
     {
         public string Name { get; private set; }
         public string Path { get; private set; }

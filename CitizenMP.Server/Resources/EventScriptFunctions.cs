@@ -54,18 +54,45 @@ namespace CitizenMP.Server.Resources
             resource = ScriptEnvironment.CurrentEnvironment.Resource.Name;
         }
 
-        static Resource ValidateResourceAndRef(int reference, uint instance, string resourceName)
+        static ICallRefHandler GetCallRefHandler(int reference, uint instance, string resourceName)
         {
-            var resource = ScriptEnvironment.CurrentEnvironment.Resource.Manager.GetResource(resourceName);
+            ICallRefHandler handler;
 
-            if (resource == null)
+            if (resourceName == "__internal")
+            {
+                handler = InternalCallRefHandler.Get();
+            }
+            else
+            {
+                handler = ScriptEnvironment.CurrentEnvironment.Resource.Manager.GetResource(resourceName);
+            }
+
+            if (handler == null)
             {
                 throw new ArgumentException("Invalid resource name.");
             }
 
-            if (resource.State != ResourceState.Running && resource.State != ResourceState.Starting && resource.State != ResourceState.Parsing)
+            if (handler is Resource)
             {
-                throw new ArgumentException("Resource wasn't running.");
+                var state = ((Resource)handler).State;
+
+                if (state != ResourceState.Running && state != ResourceState.Starting && state != ResourceState.Parsing)
+                {
+                    throw new ArgumentException("Resource wasn't running.");
+                }
+            }
+
+            return handler;
+        }
+
+        static ICallRefHandler ValidateResourceAndRef(int reference, uint instance, string resourceName)
+        {
+            // return remnants
+            var resource = GetCallRefHandler(reference, instance, resourceName);
+
+            if (resource == null)
+            {
+                return null;
             }
 
             if (!resource.HasRef(reference, instance))
