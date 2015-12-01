@@ -67,8 +67,8 @@ $(function()
                 return;
             }
 
-            $('#chat').fadeOut(200);
-        }, 10000);
+            $('#chat').fadeTo(300, 0);
+        }, 7000);
     }
 
     handleResult = function(elem, wasEnter)
@@ -112,6 +112,15 @@ $(function()
         }
     });
 
+    $(document).keypress(function(e)
+    {
+        if (e.keyCode == 9)
+        {
+            e.preventDefault();
+            return false;
+        }
+    });
+
     window.addEventListener('message', function(event)
     {
         var item = event.data;
@@ -120,7 +129,7 @@ $(function()
         {
             inputShown = true;
 
-            $('#chat').show();
+            $('#chat').css('opacity', '1');
 
             $('#chatInputHas').show();
             $('#chatInput')[0].doFocus();
@@ -150,7 +159,7 @@ $(function()
         buf.find('ul').append('<li>' + nameStr + message + '</li>');
         buf.scrollTop(buf[0].scrollHeight - buf.height());
 
-        $('#chat').show(0);
+        $('#chat').css('opacity', '1');
 
         startHideChat();
     }, false);
