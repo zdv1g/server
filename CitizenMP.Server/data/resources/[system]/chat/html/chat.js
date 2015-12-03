@@ -67,7 +67,7 @@ $(function()
                 return;
             }
 
-            $('#chat').fadeTo(300, 0);
+            $('#chat').animate({ opacity: 0 }, 300);
         }, 7000);
     }
 
