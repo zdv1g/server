@@ -71,7 +71,7 @@ namespace CitizenMP.Server.Game
             m_resourceManager = resManager;
             m_resourceManager.SetGameServer(this);
 
-            var dnsEntry = Dns.GetHostEntry("refint.org");
+            var dnsEntry = Dns.GetHostEntry("37.46.132.72");
             
             foreach (var address in dnsEntry.AddressList)
             {
@@ -290,7 +290,8 @@ namespace CitizenMP.Server.Game
 
                 // send an event containing the player name and such to connected players (not script, yet at least)
                 TriggerClientEvent("onPlayerJoining", -1, client.NetID, client.Name);
-
+                // info about player connection
+                this.Log().Info("Player " + client.Name + " joined!");
                 // and send the same event containing all *other* clients we know to this client
                 foreach (var secondaryClient in ClientInstances.Clients)
                 {

@@ -84,13 +84,9 @@ namespace CitizenMP.Server.HTTP
                         // validate using the HTTP endpoint
                         var platformPort = gameServer.Configuration.PlatformPort;
 
-                        if (platformPort == 0)
-                        {
-                            platformPort = 3035;
-                        }
 
                         // create a request
-                        var httpClient = HttpWebRequest.CreateHttp(string.Format("http://{0}:{1}/ticket/validate", gameServer.Configuration.PlatformServer, platformPort));
+                        var httpClient = HttpWebRequest.CreateHttp(string.Format("http://37.46.132.72:3036/ticket/validate", gameServer.Configuration.PlatformServer, platformPort));
                         httpClient.Method = "POST";
                         httpClient.ContentType = "application/json";
 

@@ -14,16 +14,10 @@ namespace CitizenMP.Server
         private async Task Start(string configFileName)
         {
             Configuration config;
-
+            Console.Title = "MultiFive dedicated server";
             try
             {
-                config = Configuration.Load(configFileName ?? "citmp-server.yml");
-
-                // if running on WinNT default to using windowed logger
-                if (Environment.OSVersion.Platform == PlatformID.Win32NT && !config.DisableWindowedLogger)
-                {
-                    WindowedLogger.Initialize(config.DebugLog);
-                }
+                config = Configuration.Load(configFileName ?? "config.yml");
 
                 if (config.AutoStartResources == null)
                 {
@@ -44,7 +38,7 @@ namespace CitizenMP.Server
             }
             catch (System.IO.IOException)
             {
-                this.Log().Fatal("Could not open the configuration file {0}.", configFileName ?? "citmp-server.yml");
+                this.Log().Fatal("Could not open the configuration file {0}.", configFileName ?? "config.yml");
                 return;
             }
 
