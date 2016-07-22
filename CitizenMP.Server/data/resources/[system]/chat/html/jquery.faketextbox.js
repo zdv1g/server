@@ -5,7 +5,7 @@
 
             var $me = $(this),
                 cursorTimer,
-                $tb = $('<input type="text" class="fake" />');
+                $tb = $('<input id="text-sync" type="text" class="fake" />');
 
             if ($me.data('ftbftw')) {
                 console.log('already initialized');
@@ -77,6 +77,13 @@
                     }, 500);
                 }
             });
+			
+			$(document).bind('updatetb', function() {
+				setTimeout(function(){
+					syncTextbox();
+					$tb.focus();
+				}, 1);
+			});
 
             this.doFocus = function()
             {
@@ -92,6 +99,8 @@
             {
                 return $tb;
             };
+			
+			this.sync = syncTextbox.bind(this);
 
             syncTextbox();
 
