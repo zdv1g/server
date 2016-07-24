@@ -64,6 +64,8 @@ namespace CitizenMP.Server
         public bool DisableWindowedLogger { get; set; }
 
         public bool DebugLog { get; set; }
+
+        public string Players { get; set; }
     }
 
     public class DownloadConfiguration
