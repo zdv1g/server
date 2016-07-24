@@ -35,6 +35,12 @@ namespace CitizenMP.Server
                 {
                     config.Downloads = new Dictionary<string, DownloadConfiguration>();
                 }
+
+                if(config.Players > 50)
+                {
+                    this.Log().Fatal("A lot of players.");
+                    return;
+                }
             }
             catch (System.IO.IOException)
             {
