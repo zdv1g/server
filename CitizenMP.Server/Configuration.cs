@@ -30,10 +30,6 @@ namespace CitizenMP.Server
 
         public int ListenPort { get; set; }
 
-        public string PlatformServer { get; set; }
-
-        public int PlatformPort { get; set; }
-
         public bool DisableAuth { get; set; }
 
         public string Hostname { get; set; }
@@ -65,7 +61,7 @@ namespace CitizenMP.Server
 
         public bool DebugLog { get; set; }
 
-        public string Players { get; set; }
+        public int Players { get; set; }
     }
 
     public class DownloadConfiguration

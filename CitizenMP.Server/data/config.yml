@@ -1,36 +1,27 @@
+Hostname: MultiFive server
+# ^0 is white
+# ^1 is #ff4444 red
+# ^2 is #99cc00 green/lime
+# ^3 is #ffbb33 orange
+# ^4 is #0099cc blue
+# ^5 is #33b5e5 lightblue
+# ^6 is #aa66cc purple
+
 ListenPort: 30120
+
+RconPassword: myrconpass
 
 PreParseResources:
     - mapmanager
 
 AutoStartResources:
-    #- fivem-awesome1501
     - fivem
     - spawnmanager
     - chat
 
-RconPassword: lovely
-
-Hostname: fresh FiveM server
-
-Game: GTA5
-
-PlatformServer: iv-platform.prod.citizen.re
-
-ScriptDebug: true
-
-DebugLog: false
-
-# enjoy viiv
-#Imports:
-#    - ConfigURL: http://cache.lilycove.hacks.re/exports.json
-
-# the following is an example for resource download offloading
-#Downloads:
-#    all:
-#        BaseURL: http://cache.lilycove.hacks.re/
-#        UploadURL: ftp://citizen:city@localhost/
-
-DisableAuth: false
-
 Players: 32
+
+# Being worked on, it now is automatically set to true
+# DebugLog: true
+ScriptDebug: true
+DisableAuth: true

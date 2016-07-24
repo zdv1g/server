@@ -81,12 +81,8 @@ namespace CitizenMP.Server.HTTP
                             validationAddress = IPAddress.Parse("192.168.1.1"); // as these are whitelisted in NP code
                         }
 
-                        // validate using the HTTP endpoint
-                        var platformPort = gameServer.Configuration.PlatformPort;
-
-
                         // create a request
-                        var httpClient = HttpWebRequest.CreateHttp(string.Format("http://37.46.132.72:3036/ticket/validate", gameServer.Configuration.PlatformServer, platformPort));
+                        var httpClient = HttpWebRequest.CreateHttp(string.Format("http://37.46.132.72:3036/ticket/validate"));
                         httpClient.Method = "POST";
                         httpClient.ContentType = "application/json";
 
