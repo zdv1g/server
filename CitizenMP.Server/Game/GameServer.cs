@@ -195,7 +195,7 @@ namespace CitizenMP.Server.Game
 
         string GetServerInfoString(string challenge)
         {
-            return string.Format("\\sv_maxclients\\{0}\\clients\\{1}\\challenge\\{2}\\gamename\\{3}\\protocol\\3\\hostname\\{4}\\gametype\\{5}\\mapname\\{6}", m_configuration.Players ,ClientInstances.Clients.Count(cl => cl.Value.RemoteEP != null), challenge, m_configuration.Game ?? "GTA5", m_configuration.Hostname ?? "CitizenMP", GameType ?? "", MapName ?? "");
+            return string.Format("\\sv_maxclients\\{0}\\clients\\{1}\\challenge\\{2}\\gamename\\{3}\\protocol\\3\\hostname\\{4}\\gametype\\{5}\\mapname\\{6}", m_configuration.Players ,ClientInstances.Clients.Count(cl => cl.Value.RemoteEP != null), challenge, m_configuration.Game ?? "GTA5", m_configuration.Hostname ?? "CitizenMP", GameType ?? "", m_configuration.Mapname ?? "");
         }
 
         private Dictionary<IPEndPoint, int> m_lastRconTimes = new Dictionary<IPEndPoint, int>();

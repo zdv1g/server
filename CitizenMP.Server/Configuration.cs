@@ -62,6 +62,8 @@ namespace CitizenMP.Server
         public bool DebugLog { get; set; }
 
         public int Players { get; set; }
+
+        public string Mapname { get; set; }
     }
 
     public class DownloadConfiguration
